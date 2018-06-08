@@ -6,14 +6,11 @@ import io.vertx.core.Handler;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
-//import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.RoutingContext;
 //import io.vertx.ext.web.handler.BodyHandler;
 //import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.core.Vertx;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 public class myvertxapp extends AbstractVerticle {
     private static final int serverPort = 8080;
@@ -23,9 +20,24 @@ public class myvertxapp extends AbstractVerticle {
         HttpServer server = vertx.createHttpServer();
 
         Router router = Router.router(vertx);
-//        router.get("/").handler(this::indexHandler);
-//        router.get("/wiki/:page").handler(this::pageRenderingHandler);
-//        router.post().handler(BodyHandler.create());
+        
+        router.route("/").handler(routingContext -> {
+            HttpServerResponse response = routingContext.response();
+            response
+                .putHeader("content-type", "text/html")
+                .end("<html><h1>Hello World from Vert.x-Web!</h1><h2>Context: /</h2></html>");
+        });
+
+        router.route().handler(routingContext -> {
+            // Get the given context
+            String givenContext = routingContext.normalisedPath();
+            HttpServerResponse response = routingContext.response();
+
+            response
+                .putHeader("content-type", "text/html")
+                .setStatusCode(404)
+                .end("<html><h1>Error!!!</h1><h2>You are in "+givenContext+"</h2></html>");
+        });
 
         server
             .requestHandler(router::accept)
@@ -56,39 +68,5 @@ public class myvertxapp extends AbstractVerticle {
             }
         });
     }   
-
-    // Only needed for embedded Java code!!!
-    public static void main(String[] args) throws java.io.IOException {
-        final String[] deployid = {""};
-        Future<Void> future = Future.future();
-        Vertx vertx = Vertx.vertx();
-        vertx.deployVerticle(new myvertxapp(), ar -> {
-            if (ar.succeeded()) {
-                deployid[0] = ar.result();
-                System.out.println("Deployed. ID: "+deployid[0]+"\n");
-        //        future.complete();
-            } else {
-                System.out.println("Not deployed\n");
-                future.fail(ar.cause());
-                System.exit(1);
-            }                   
-        });
-        System.out.println("Press a key to undeploy\n");
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        br.readLine();
-        System.out.println("Undeploying: "+deployid[0]);
-        vertx.undeploy(deployid[0], ar -> {
-            if (ar.succeeded()) {
-                System.out.println("Undeployed\n");
-                future.complete();
-                System.exit(0);
-            } else {
-                System.out.println("Not undeployed\n");
-                future.fail(ar.cause());
-                System.exit(1);
-            }                   
-        });
-        
-    }
 
 }
